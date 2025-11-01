@@ -168,13 +168,13 @@ class Agent:
                                                         device=self.device, plot=self.plot)
 
     def get_observation(self):
-        [node_inputs, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask],\
+        [node_inputs, sector_features, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask],\
         [self.node_coords, self.utility, self.guidepost, self.explored_sign, self.adjacent_matrix, self.neighbor_indices]\
             = self.pred_node_manager.get_ground_truth_observation(self.location, self.pred_mean_map_info)
-        return [node_inputs, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask]
+        return [node_inputs, sector_features, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask]
 
     def select_next_waypoint(self, observation, greedy=False):
-        _, _, _, _, current_edge, _ = observation
+        _, _, _, _, _, current_edge, _ = observation
         with torch.no_grad():
             logp = self.policy_net(*observation)
         if not greedy:

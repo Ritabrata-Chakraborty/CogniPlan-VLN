@@ -1,88 +1,27 @@
-# CogniPlan: Predict Layouts Before Plan
+# CogniPlan-VLN: Uncertainty-Guided Path Planning with Conditional Generative Layout Prediction
 
-### [Paper](https://arxiv.org/pdf/2508.03027) | [Project Page](https://yizhuo-wang.com/cogniplan/)
-
-> CogniPlan: Uncertainty-Guided Path Planning with Conditional Generative Layout Prediction
+### **[Paper](https://arxiv.org/pdf/2508.03027)** | **[Project Page](https://yizhuo-wang.com/cogniplan/)**
 
 
-## News / ToDo
+## What's New in V2 🎉
 
-- [ ] Release ROS simulation code.
-- [x] [9 Sep 2025] Release code and model for navigation ([navigation branch](https://github.com/marmotlab/CogniPlan/tree/navigation)).
-- [x] [6 Sep 2025] Release code and model for exploration ([main branch](https://github.com/marmotlab/CogniPlan/tree/main)).
-- [x] [4 Aug 2025] CogniPlan is accepted to CoRL 2025!
+CogniPlan V2 introduces **Sectoral Frontier Cross-Attention** for improved spatial reasoning.
 
-## Setup
+### Key Features
 
-### Environment
+#### 1. Sectoral Frontier Cross-Attention
+- Divides space around each node into 8 sectors with 5 features each
+- Cross-attention mechanism enriches node representations (6D → 32D)
+- End-to-end training with PolicyNet and QNet
 
-We use conda/mamba to manage the environment.
-The required packages are listed below.
-We have tested multiple versions without major issues, so you may adjust them as needed.
+#### 2. Performance Optimizations
+- Smart computation skipping for low-utility nodes
+- Robust bounds checking and efficient storage
 
-```bash
-conda create -n cogniplan python=3.12 scikit-image imageio pandas tensorboard matplotlib
-conda activate cogniplan
-pip install torch torchvision opencv-python ray wandb
-```
+#### 3. Enhanced Visualization
+- New `visualize_logs.py` creates 3 consolidated training progress figures
 
-### Checkpoints and Datasets
-
-Clone this repository and navigate to the directory.
-
-```bash
-git clone https://github.com/marmotlab/CogniPlan
-cd CogniPlan
-```
-
-Download the required checkpoints and datasets using the scripts below.
-It will unpack them to the corresponding directories automatically.
-
-```bash
-# Default: checkpoints + maps_train + maps_eval
-bash dataset/download.sh
-
-# Optional datasets: for inpainting module training/evaluation
-bash dataset/download.sh optional
-
-# Everything
-bash dataset/download.sh all
-```
-
-You can also manually download and unpack the files from our release page.
-
-
-### Training
-
-Set parameters in `planner/parameter.py` as needed, and run:
-
-```bash
-python -m planner.driver
-```
-
-To train the inpainting module, run:
-
-```bash
-python -m mapinpaint.train
-```
-
-### Evaluation
-
-To evaluate our pre-trained model, run:
-
-```bash
-python -m planner.test_driver
-```
-
-To evaluate the inpainting module, run:
-
-```bash
-python -m mapinpaint.evaluator
-```
-
-> Note: If you want to debug in PyCharm, edit the run configuration kind from script to **module**, 
-> and set `planner.xxx` or `mapinpaint.xxx` as the module name.
-> Set the working directory to the **root** of this repository.
+#### 4. Architecture Changes
 
 
 ## Citation
@@ -98,9 +37,7 @@ python -m mapinpaint.evaluator
 ```
 
 ### Authors
-[Yizhuo Wang](https://www.yizhuo-wang.com/),
-[Haodong He](https://hehaodong2004.github.io/),
-[Jingsong Liang](https://jingsongliang.com/),
-[Yuhong Cao](https://www.yuhongcao.online/),
 [Ritabrata Chakraborty](https://in.linkedin.com/in/ritabrata-chakraborty-a63268251/),
+[Yizhuo Wang](https://www.yizhuo-wang.com/),
+[Derek Tan](https://www.derektanmingsiang.com/),
 [Guillaume Sartoretti](https://cde.nus.edu.sg/me/staff/sartoretti-guillaume-a/)

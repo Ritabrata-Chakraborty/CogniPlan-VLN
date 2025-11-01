@@ -25,7 +25,7 @@ class Worker:
 
         self.episode_buffer = []
         self.perf_metrics = dict()
-        for i in range(27):
+        for i in range(31):  # Increased from 27 to 31 to accommodate sector_features
             self.episode_buffer.append([])
 
     def run_episode(self):
@@ -87,49 +87,53 @@ class Worker:
             make_gif(gif_path, self.global_step, self.env.frame_files, self.env.explored_rate)
 
     def save_observation(self, observation, ground_truth_observation):
-        node_inputs, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask = observation
+        node_inputs, sector_features, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask = observation
         self.episode_buffer[0] += node_inputs
-        self.episode_buffer[1] += node_padding_mask.bool()
-        self.episode_buffer[2] += edge_mask.bool()
-        self.episode_buffer[3] += current_index
-        self.episode_buffer[4] += current_edge
-        self.episode_buffer[5] += edge_padding_mask.bool()
+        self.episode_buffer[1] += sector_features
+        self.episode_buffer[2] += node_padding_mask.bool()
+        self.episode_buffer[3] += edge_mask.bool()
+        self.episode_buffer[4] += current_index
+        self.episode_buffer[5] += current_edge
+        self.episode_buffer[6] += edge_padding_mask.bool()
 
-        critic_node_inputs, critic_node_padding_mask, critic_edge_mask, critic_current_index, critic_current_edge, critic_edge_padding_mask = ground_truth_observation
-        self.episode_buffer[15] += critic_node_inputs
-        self.episode_buffer[16] += critic_node_padding_mask.bool()
-        self.episode_buffer[17] += critic_edge_mask.bool()
-        self.episode_buffer[18] += critic_current_index
-        self.episode_buffer[19] += critic_current_edge
-        self.episode_buffer[20] += critic_edge_padding_mask.bool()
+        critic_node_inputs, critic_sector_features, critic_node_padding_mask, critic_edge_mask, critic_current_index, critic_current_edge, critic_edge_padding_mask = ground_truth_observation
+        self.episode_buffer[17] += critic_node_inputs
+        self.episode_buffer[18] += critic_sector_features
+        self.episode_buffer[19] += critic_node_padding_mask.bool()
+        self.episode_buffer[20] += critic_edge_mask.bool()
+        self.episode_buffer[21] += critic_current_index
+        self.episode_buffer[22] += critic_current_edge
+        self.episode_buffer[23] += critic_edge_padding_mask.bool()
 
         assert torch.all(current_edge == critic_current_edge), print(current_edge, critic_current_edge, current_index, critic_current_index)
         assert torch.all(node_inputs[0, current_index.item(), :2] == critic_node_inputs[0, critic_current_index.item(), :2]), print(node_inputs[0, current_index.item()], critic_node_inputs[0, critic_current_index.item()])
         assert torch.all(torch.gather(node_inputs, 1, current_edge.repeat(1, 1, 2)) == torch.gather(critic_node_inputs, 1, critic_current_edge.repeat(1, 1, 2)))
 
     def save_action(self, action_index):
-        self.episode_buffer[6] += action_index.reshape(1, 1, 1)
+        self.episode_buffer[7] += action_index.reshape(1, 1, 1)
 
     def save_reward_done(self, reward, done):
-        self.episode_buffer[7] += torch.FloatTensor([reward]).reshape(1, 1, 1).to(self.device)
-        self.episode_buffer[8] += torch.tensor([int(done)]).reshape(1, 1, 1).to(self.device)
+        self.episode_buffer[8] += torch.FloatTensor([reward]).reshape(1, 1, 1).to(self.device)
+        self.episode_buffer[9] += torch.tensor([int(done)]).reshape(1, 1, 1).to(self.device)
 
     def save_next_observations(self, observation, ground_truth_observation):
-        node_inputs, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask = observation
-        self.episode_buffer[9] += node_inputs
-        self.episode_buffer[10] += node_padding_mask.bool()
-        self.episode_buffer[11] += edge_mask.bool()
-        self.episode_buffer[12] += current_index
-        self.episode_buffer[13] += current_edge
-        self.episode_buffer[14] += edge_padding_mask.bool()
+        node_inputs, sector_features, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask = observation
+        self.episode_buffer[10] += node_inputs
+        self.episode_buffer[11] += sector_features
+        self.episode_buffer[12] += node_padding_mask.bool()
+        self.episode_buffer[13] += edge_mask.bool()
+        self.episode_buffer[14] += current_index
+        self.episode_buffer[15] += current_edge
+        self.episode_buffer[16] += edge_padding_mask.bool()
 
-        critic_node_inputs, critic_node_padding_mask, critic_edge_mask, critic_current_index, critic_current_edge, critic_edge_padding_mask = ground_truth_observation
-        self.episode_buffer[21] += critic_node_inputs
-        self.episode_buffer[22] += critic_node_padding_mask.bool()
-        self.episode_buffer[23] += critic_edge_mask.bool()
-        self.episode_buffer[24] += critic_current_index
-        self.episode_buffer[25] += critic_current_edge
-        self.episode_buffer[26] += critic_edge_padding_mask.bool()
+        critic_node_inputs, critic_sector_features, critic_node_padding_mask, critic_edge_mask, critic_current_index, critic_current_edge, critic_edge_padding_mask = ground_truth_observation
+        self.episode_buffer[24] += critic_node_inputs
+        self.episode_buffer[25] += critic_sector_features
+        self.episode_buffer[26] += critic_node_padding_mask.bool()
+        self.episode_buffer[27] += critic_edge_mask.bool()
+        self.episode_buffer[28] += critic_current_index
+        self.episode_buffer[29] += critic_current_edge
+        self.episode_buffer[30] += critic_edge_padding_mask.bool()
 
 if __name__ == "__main__":
     import yaml

@@ -80,6 +80,9 @@ class Node:
         self.neighbor_matrix[2, 2] = 1
         self.neighbor_set.add((self.coords[0], self.coords[1]))
         self.need_update_neighbor = True
+        
+        # Sector features for attention mechanism
+        self.sector_features = self.compute_sector_features(updating_map_info)
 
     def initialize_observable_frontiers(self, frontiers, updating_map_info):
         if len(frontiers) == 0:
@@ -157,7 +160,33 @@ class Node:
         if self.utility <= MIN_UTILITY:
             self.utility = 0
             self.observable_frontiers = set()
+        
+        # Recompute sector features after updating frontiers
+        self.sector_features = self.compute_sector_features(updating_map_info)
 
+    def compute_sector_features(self, updating_map_info):
+        """
+        Compute sector features for this node using frontier attention module.
+        Skip computation if utility is 0 (optimization).
+        
+        Returns:
+            sector_features: numpy array of shape (8, 5)
+        """
+        # Skip expensive computation if utility is too low (below MIN_UTILITY threshold)
+        if self.utility == 0:
+            # Return zeros with only orientation filled
+            sector_features = np.zeros((8, 5))
+            sector_angles = np.array([0, 45, 90, 135, 180, 225, 270, 315]) * np.pi / 180
+            sector_features[:, 4] = sector_angles / (2 * np.pi)
+            return sector_features
+        
+        from .frontier_attention import compute_sector_features
+        return compute_sector_features(
+            self.coords,
+            self.observable_frontiers,
+            updating_map_info
+        )
+    
     def set_visited(self):
         self.visited = 1
         self.observable_frontiers = set()

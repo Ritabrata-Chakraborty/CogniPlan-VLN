@@ -118,7 +118,7 @@ def main():
 
     # initialize training replay buffer
     experience_buffer = []
-    for i in range(27):
+    for i in range(31):  # Increased from 27 to 31 to accommodate sector_features
         experience_buffer.append([])
 
     # collect data from worker and do training
@@ -165,43 +165,47 @@ def main():
 
                     # stack batch data to tensors
                     node_inputs = torch.stack(rollouts[0]).to(device)
-                    node_padding_mask = torch.stack(rollouts[1]).to(device)
-                    edge_mask = torch.stack(rollouts[2]).to(device)
-                    current_index = torch.stack(rollouts[3]).to(device)
-                    current_edge = torch.stack(rollouts[4]).to(device)
-                    edge_padding_mask = torch.stack(rollouts[5]).to(device)
-                    action = torch.stack(rollouts[6]).to(device)
-                    reward = torch.stack(rollouts[7]).to(device)
-                    done = torch.stack(rollouts[8]).to(device)
-                    next_node_inputs = torch.stack(rollouts[9]).to(device)
-                    next_node_padding_mask = torch.stack(rollouts[10]).to(device)
-                    next_edge_mask = torch.stack(rollouts[11]).to(device)
-                    next_current_index = torch.stack(rollouts[12]).to(device)
-                    next_current_edge = torch.stack(rollouts[13]).to(device)
-                    next_edge_padding_mask = torch.stack(rollouts[14]).to(device)
+                    sector_features = torch.stack(rollouts[1]).to(device)
+                    node_padding_mask = torch.stack(rollouts[2]).to(device)
+                    edge_mask = torch.stack(rollouts[3]).to(device)
+                    current_index = torch.stack(rollouts[4]).to(device)
+                    current_edge = torch.stack(rollouts[5]).to(device)
+                    edge_padding_mask = torch.stack(rollouts[6]).to(device)
+                    action = torch.stack(rollouts[7]).to(device)
+                    reward = torch.stack(rollouts[8]).to(device)
+                    done = torch.stack(rollouts[9]).to(device)
+                    next_node_inputs = torch.stack(rollouts[10]).to(device)
+                    next_sector_features = torch.stack(rollouts[11]).to(device)
+                    next_node_padding_mask = torch.stack(rollouts[12]).to(device)
+                    next_edge_mask = torch.stack(rollouts[13]).to(device)
+                    next_current_index = torch.stack(rollouts[14]).to(device)
+                    next_current_edge = torch.stack(rollouts[15]).to(device)
+                    next_edge_padding_mask = torch.stack(rollouts[16]).to(device)
 
-                    critic_node_inputs = torch.stack(rollouts[15]).to(device)
-                    critic_node_padding_mask = torch.stack(rollouts[16]).to(device)
-                    critic_edge_mask = torch.stack(rollouts[17]).to(device)
-                    critic_current_index = torch.stack(rollouts[18]).to(device)
-                    critic_current_edge = torch.stack(rollouts[19]).to(device)
-                    critic_edge_padding_mask = torch.stack(rollouts[20]).to(device)
-                    critic_next_node_inputs = torch.stack(rollouts[21]).to(device)
-                    critic_next_node_padding_mask = torch.stack(rollouts[22]).to(device)
-                    critic_next_edge_mask = torch.stack(rollouts[23]).to(device)
-                    critic_next_current_index = torch.stack(rollouts[24]).to(device)
-                    critic_next_current_edge = torch.stack(rollouts[25]).to(device)
-                    critic_next_edge_padding_mask = torch.stack(rollouts[26]).to(device)
+                    critic_node_inputs = torch.stack(rollouts[17]).to(device)
+                    critic_sector_features = torch.stack(rollouts[18]).to(device)
+                    critic_node_padding_mask = torch.stack(rollouts[19]).to(device)
+                    critic_edge_mask = torch.stack(rollouts[20]).to(device)
+                    critic_current_index = torch.stack(rollouts[21]).to(device)
+                    critic_current_edge = torch.stack(rollouts[22]).to(device)
+                    critic_edge_padding_mask = torch.stack(rollouts[23]).to(device)
+                    critic_next_node_inputs = torch.stack(rollouts[24]).to(device)
+                    critic_next_sector_features = torch.stack(rollouts[25]).to(device)
+                    critic_next_node_padding_mask = torch.stack(rollouts[26]).to(device)
+                    critic_next_edge_mask = torch.stack(rollouts[27]).to(device)
+                    critic_next_current_index = torch.stack(rollouts[28]).to(device)
+                    critic_next_current_edge = torch.stack(rollouts[29]).to(device)
+                    critic_next_edge_padding_mask = torch.stack(rollouts[30]).to(device)
 
-                    observation = [node_inputs, node_padding_mask, edge_mask, current_index,
+                    observation = [node_inputs, sector_features, node_padding_mask, edge_mask, current_index,
                                    current_edge, edge_padding_mask]
-                    next_observation = [next_node_inputs, next_node_padding_mask, next_edge_mask,
+                    next_observation = [next_node_inputs, next_sector_features, next_node_padding_mask, next_edge_mask,
                                         next_current_index, next_current_edge, next_edge_padding_mask]
 
-                    critic_observation = [critic_node_inputs, critic_node_padding_mask, critic_edge_mask,
+                    critic_observation = [critic_node_inputs, critic_sector_features, critic_node_padding_mask, critic_edge_mask,
                                           critic_current_index,
                                           critic_current_edge, critic_edge_padding_mask]
-                    critic_next_observation = [critic_next_node_inputs, critic_next_node_padding_mask,
+                    critic_next_observation = [critic_next_node_inputs, critic_next_sector_features, critic_next_node_padding_mask,
                                                critic_next_edge_mask,
                                                critic_next_current_index, critic_next_current_edge,
                                                critic_next_edge_padding_mask]

@@ -54,6 +54,15 @@ class GroundTruthNodeManager:
         utility = np.array(utility)
         explored_sign = np.array(explored_sign)
         pred_prob = np.array(pred_prob)
+        
+        # Compute sector features for all nodes
+        sector_features_list = []
+        for coords in all_node_coords:
+            node = self.nodes_dict.find((coords[0], coords[1])).data
+            # Get sector features (8 sectors × 5 features)
+            sector_feats = node.compute_sector_features(self.pred_map_info)
+            sector_features_list.append(sector_feats)
+        sector_features = np.array(sector_features_list)  # Shape: (n_nodes, 8, 5)
 
         indices = np.argwhere(utility > 0).reshape(-1)
         utility_node_coords = all_node_coords[indices]
@@ -107,10 +116,19 @@ class GroundTruthNodeManager:
         node_predprob = node_predprob / FREE
         node_inputs = np.concatenate((node_coords, node_utility, node_predprob, node_guidepost, node_guidepost2), axis=1)
         node_inputs = torch.FloatTensor(node_inputs).unsqueeze(0).to(self.device)
+        
+        # Convert sector features to tensor: (n_nodes, 8, 5) -> (1, n_nodes, 8, 5)
+        sector_features_tensor = torch.FloatTensor(sector_features).unsqueeze(0).to(self.device)
 
         assert node_coords.shape[0] < NODE_PADDING_SIZE, print(node_coords.shape[0], NODE_PADDING_SIZE)
         padding = torch.nn.ZeroPad2d((0, 0, 0, NODE_PADDING_SIZE - n_node))
         node_inputs = padding(node_inputs)
+        
+        # Pad sector features: (1, n_node, 8, 5) -> (1, NODE_PADDING_SIZE, 8, 5)
+        padding_3d = torch.nn.ZeroPad2d((0, 0, 0, 0))  # No padding for last two dims
+        # We need to pad the second dimension (n_node -> NODE_PADDING_SIZE)
+        sector_padding = torch.zeros((1, NODE_PADDING_SIZE - n_node, 8, 5), dtype=torch.float32).to(self.device)
+        sector_features_tensor = torch.cat([sector_features_tensor, sector_padding], dim=1)
 
         node_padding_mask = torch.zeros((1, 1, n_node), dtype=torch.int16).to(self.device)
         node_padding = torch.ones((1, 1, NODE_PADDING_SIZE - n_node), dtype=torch.int16).to(
@@ -137,7 +155,7 @@ class GroundTruthNodeManager:
 
         current_index = torch.tensor([current_index]).reshape(1, 1, 1).to(self.device)
 
-        return [node_inputs, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask],\
+        return [node_inputs, sector_features_tensor, node_padding_mask, edge_mask, current_index, current_edge, edge_padding_mask],\
                [all_node_coords, utility, guidepost, explored_sign, adjacent_matrix, neighbor_indices]
 
     def add_node_to_dict(self, coords):
@@ -225,6 +243,7 @@ class Node:
         self.utility = -(SENSOR_RANGE * 3.14 // FRONTIER_CELL_SIZE)
         self.explored = 0
         self.visited = 0
+        self.observable_frontiers = set()  # Track frontiers for sector computation
 
         self.neighbor_matrix = -np.ones((5, 5))
         self.neighbor_set = set()
@@ -257,3 +276,18 @@ class Node:
 
                             neighbor_node.neighbor_matrix[neighbor_matrix_x, neighbor_matrix_y] = 1
                             neighbor_node.neighbor_set.add((self.coords[0], self.coords[1]))
+    
+    def compute_sector_features(self, map_info):
+        """
+        Compute sector features for this node using frontier attention module.
+        For ground truth nodes, we use empty observable_frontiers if not set.
+        
+        Returns:
+            sector_features: numpy array of shape (8, 5)
+        """
+        from .frontier_attention import compute_sector_features
+        return compute_sector_features(
+            self.coords,
+            self.observable_frontiers,
+            map_info
+        )

@@ -207,8 +207,20 @@ class Decoder(nn.Module):
 class PolicyNet(nn.Module):
     def __init__(self, node_dim, embedding_dim):
         super(PolicyNet, self).__init__()
+        
+        # Import sector encoder
+        from .frontier_attention import SectorFrontierEncoder
+        from .parameter import SECTOR_COUNT, SECTOR_FEATURE_DIM, ATTENTION_OUTPUT_DIM
 
-        # graph encoder
+        # Sector attention module
+        self.sector_encoder = SectorFrontierEncoder(
+            position_dim=2,
+            sector_feature_dim=SECTOR_FEATURE_DIM,
+            n_sectors=SECTOR_COUNT,
+            output_dim=ATTENTION_OUTPUT_DIM
+        )
+
+        # graph encoder - now takes 32D input (6 base + 26 sector attention)
         self.initial_embedding = nn.Linear(node_dim, embedding_dim)
         self.encoder = Encoder(embedding_dim=embedding_dim, n_head=8, n_layer=6)
 
@@ -219,8 +231,18 @@ class PolicyNet(nn.Module):
         # pointer
         self.pointer = SingleHeadAttention(embedding_dim)
 
-    def encode_graph(self, node_inputs, node_padding_mask, edge_mask):
-        node_feature = self.initial_embedding(node_inputs)
+    def encode_graph(self, node_inputs, sector_features, node_padding_mask, edge_mask):
+        # Extract node positions (first 2 dimensions of node_inputs)
+        node_positions = node_inputs[:, :, :2]
+        
+        # Apply cross-attention on sector features
+        sector_encoding = self.sector_encoder(node_positions, sector_features)
+        
+        # Concatenate: 6D base features + 26D sector encoding = 32D
+        enriched_features = torch.cat([node_inputs, sector_encoding], dim=-1)
+        
+        # Embed to 128D
+        node_feature = self.initial_embedding(enriched_features)
         enhanced_node_feature = self.encoder(src=node_feature,
                                                          key_padding_mask=node_padding_mask,
                                                          attn_mask=edge_mask)
@@ -252,9 +274,9 @@ class PolicyNet(nn.Module):
         return logp
 
     # @torch.compile
-    def forward(self, node_inputs, node_padding_mask, edge_mask, current_index,
+    def forward(self, node_inputs, sector_features, node_padding_mask, edge_mask, current_index,
                 current_edge, edge_padding_mask):
-        enhanced_node_feature = self.encode_graph(node_inputs, node_padding_mask, edge_mask)
+        enhanced_node_feature = self.encode_graph(node_inputs, sector_features, node_padding_mask, edge_mask)
         current_node_feature, enhanced_current_node_feature = self.decode_state(
             enhanced_node_feature, current_index, node_padding_mask)
         logp = self.output_policy(current_node_feature, enhanced_current_node_feature,
@@ -266,8 +288,20 @@ class PolicyNet(nn.Module):
 class QNet(nn.Module):
     def __init__(self, node_dim, embedding_dim):
         super(QNet, self).__init__()
+        
+        # Import sector encoder
+        from .frontier_attention import SectorFrontierEncoder
+        from .parameter import SECTOR_COUNT, SECTOR_FEATURE_DIM, ATTENTION_OUTPUT_DIM
 
-        # graph encoder
+        # Sector attention module
+        self.sector_encoder = SectorFrontierEncoder(
+            position_dim=2,
+            sector_feature_dim=SECTOR_FEATURE_DIM,
+            n_sectors=SECTOR_COUNT,
+            output_dim=ATTENTION_OUTPUT_DIM
+        )
+
+        # graph encoder - now takes 32D input (6 base + 26 sector attention)
         self.initial_embedding = nn.Linear(node_dim, embedding_dim)
         self.encoder = Encoder(embedding_dim=embedding_dim, n_head=8, n_layer=6)
 
@@ -276,8 +310,18 @@ class QNet(nn.Module):
 
         self.q_values_layer = nn.Linear(embedding_dim * 3, 1)
 
-    def encode_graph(self, node_inputs, node_padding_mask, edge_mask):
-        node_feature = self.initial_embedding(node_inputs)
+    def encode_graph(self, node_inputs, sector_features, node_padding_mask, edge_mask):
+        # Extract node positions (first 2 dimensions of node_inputs)
+        node_positions = node_inputs[:, :, :2]
+        
+        # Apply cross-attention on sector features
+        sector_encoding = self.sector_encoder(node_positions, sector_features)
+        
+        # Concatenate: 6D base features + 26D sector encoding = 32D
+        enriched_features = torch.cat([node_inputs, sector_encoding], dim=-1)
+        
+        # Embed to 128D
+        node_feature = self.initial_embedding(enriched_features)
         enhanced_node_feature = self.encoder(src=node_feature,
                                                          key_padding_mask=node_padding_mask,
                                                          attn_mask=edge_mask)
@@ -307,9 +351,9 @@ class QNet(nn.Module):
         q_values = self.q_values_layer(action_features)
         return q_values
 
-    def forward(self, node_inputs, node_padding_mask, edge_mask, current_index,
+    def forward(self, node_inputs, sector_features, node_padding_mask, edge_mask, current_index,
                 current_edge, edge_padding_mask):
-        enhanced_node_feature = self.encode_graph(node_inputs, node_padding_mask, edge_mask)
+        enhanced_node_feature = self.encode_graph(node_inputs, sector_features, node_padding_mask, edge_mask)
         current_node_feature, enhanced_current_node_feature = self.decode_state(enhanced_node_feature, current_index, node_padding_mask)
         q_values = self.output_q(current_node_feature, enhanced_current_node_feature,
                                  enhanced_node_feature, current_edge, edge_padding_mask)

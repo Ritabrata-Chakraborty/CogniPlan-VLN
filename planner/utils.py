@@ -157,14 +157,17 @@ def frontier_down_sample(data, voxel_size=FRONTIER_CELL_SIZE):
 
 def check_collision(start, end, map_info):
     # Bresenham line algorithm checking
-    assert start[0] >= map_info.map_origin_x
-    assert start[1] >= map_info.map_origin_y
-    assert end[0] >= map_info.map_origin_x
-    assert end[1] >= map_info.map_origin_y
-    assert start[0] <= map_info.map_origin_x + map_info.cell_size * map_info.map.shape[1]
-    assert start[1] <= map_info.map_origin_y + map_info.cell_size * map_info.map.shape[0]
-    assert end[0] <= map_info.map_origin_x + map_info.cell_size * map_info.map.shape[1]
-    assert end[1] <= map_info.map_origin_y + map_info.cell_size * map_info.map.shape[0]
+    # Check bounds - return collision if out of bounds
+    if (start[0] < map_info.map_origin_x or
+        start[1] < map_info.map_origin_y or
+        end[0] < map_info.map_origin_x or
+        end[1] < map_info.map_origin_y or
+        start[0] > map_info.map_origin_x + map_info.cell_size * map_info.map.shape[1] or
+        start[1] > map_info.map_origin_y + map_info.cell_size * map_info.map.shape[0] or
+        end[0] > map_info.map_origin_x + map_info.cell_size * map_info.map.shape[1] or
+        end[1] > map_info.map_origin_y + map_info.cell_size * map_info.map.shape[0]):
+        return True  # Treat out-of-bounds as collision
+    
     collision = False
 
     start_cell = get_cell_position_from_coords(start, map_info)

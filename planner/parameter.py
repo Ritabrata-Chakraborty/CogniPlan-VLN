@@ -41,12 +41,17 @@ GAMMA = 1
 NUM_META_AGENT = 16  # how many threads does your CPU have
 
 # network parameters
-NODE_INPUT_DIM = 6
+NODE_INPUT_DIM = 32  # 6 base features + 26 from sector attention
 EMBEDDING_DIM = 128
+
+# Sector attention parameters
+SECTOR_COUNT = 8
+SECTOR_FEATURE_DIM = 5  # count, density, distance, connectivity, orientation
+ATTENTION_OUTPUT_DIM = 26
 
 # Graph parameters
 K_SIZE = 25  # the number of neighboring nodes, fixed
-NODE_PADDING_SIZE = 650  # the number of nodes will be padded to this value, need it for batch training
+NODE_PADDING_SIZE = 800  # the number of nodes will be padded to this value, need it for batch training
 
 # GPU usage
 USE_GPU = False  # do you want to collect training data using GPUs (better not)
